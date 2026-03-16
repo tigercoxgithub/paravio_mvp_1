@@ -12,9 +12,7 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final TextEditingController _baseUrlController = TextEditingController(
-    text: 'http://127.0.0.1:8787',
-  );
+  final TextEditingController _baseUrlController = TextEditingController();
   final TextEditingController _characterIdController = TextEditingController(
     text: 'c0000000-0000-0000-0000-000000000001',
   );
@@ -88,7 +86,11 @@ class _ChatScreenState extends State<ChatScreen> {
               runSpacing: 12,
               spacing: 12,
               children: <Widget>[
-                _inputField(_baseUrlController, 'API Base URL', width: 320),
+                _inputField(
+                  _baseUrlController,
+                  'API Base URL (optional)',
+                  width: 320,
+                ),
                 _inputField(_characterIdController, 'Character ID', width: 360),
                 _inputField(_userIdController, 'User ID', width: 220),
                 _inputField(
@@ -174,6 +176,9 @@ class _ChatScreenState extends State<ChatScreen> {
         controller: controller,
         decoration: InputDecoration(
           labelText: label,
+          hintText: label.startsWith('API Base URL')
+              ? 'Leave blank to use same-origin /api'
+              : null,
           border: const OutlineInputBorder(),
         ),
       ),

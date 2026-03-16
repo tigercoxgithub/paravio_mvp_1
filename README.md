@@ -95,6 +95,48 @@ wrangler dev
 wrangler deploy
 ```
 
+## Serve Flutter Web via Cloudflare Worker
+
+This repository can serve both the API and Flutter web app from the same Worker.
+
+### 1. Build Flutter web assets
+
+```bash
+npm run build:web
+```
+
+This generates static files at `flutter_frontend/build/web`.
+
+### 2. Deploy Worker + assets
+
+```bash
+npm run deploy:web
+```
+
+### 3. Route behavior
+
+- `/api/*` is handled by the Worker API logic.
+- Non-API routes are served from Worker static assets (`flutter_frontend/build/web`).
+- SPA fallback is enabled, so routes like `/chat` resolve to `index.html`.
+
+### 4. Verify deployment
+
+```bash
+curl https://YOUR_WORKER_DOMAIN/api/health
+curl -X POST https://YOUR_WORKER_DOMAIN/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "character_id": "c0000000-0000-0000-0000-000000000001",
+    "user_id": "user-123",
+    "message": "hello"
+  }'
+```
+
+Then open `https://YOUR_WORKER_DOMAIN/` in a browser and confirm:
+- the Flutter app loads,
+- deep links (for example `/chat`) load the app shell,
+- frontend calls to `/api/*` succeed.
+
 ## API Usage
 
 ### Send a message

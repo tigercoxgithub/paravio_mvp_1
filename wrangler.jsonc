@@ -3,6 +3,11 @@
   "main": "src/index.ts",
   "compatibility_date": "2025-06-01",
   "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "flutter_frontend/build/web",
+    "not_found_handling": "single-page-application"
+  },
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",

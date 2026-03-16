@@ -82,4 +82,5 @@ export interface ChatResponse {
 export interface Env {
   HYPERDRIVE: Hyperdrive;
   GROQ_API_KEY: string;
+  ASSETS: Fetcher;
 }

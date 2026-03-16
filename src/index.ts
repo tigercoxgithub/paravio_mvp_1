@@ -26,13 +26,14 @@ function errorResponse(message: string, status = 400): Response {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    // Handle CORS preflight
-    if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders() });
-    }
-
     const url = new URL(request.url);
     const path = url.pathname;
+    const isApiRoute = path.startsWith("/api/");
+
+    // Handle CORS preflight for API routes only.
+    if (isApiRoute && request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders() });
+    }
 
     try {
       // POST /api/chat
@@ -89,7 +90,12 @@ export default {
         }
       }
 
-      return errorResponse("Not found", 404);
+      if (isApiRoute) {
+        return errorResponse("Not found", 404);
+      }
+
+      // Non-API paths are served from Worker assets.
+      return env.ASSETS.fetch(request);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Internal server error";
       console.error("Request error:", err);

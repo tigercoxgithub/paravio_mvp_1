@@ -12,11 +12,22 @@ class ParavioApiException implements Exception {
 }
 
 class ParavioApi {
-  ParavioApi({required this.baseUrl, http.Client? client})
+  ParavioApi({this.baseUrl = '', http.Client? client})
     : _client = client ?? http.Client();
 
   final String baseUrl;
   final http.Client _client;
+
+  Uri _chatEndpoint() {
+    final String trimmed = baseUrl.trim();
+    if (trimmed.isEmpty) {
+      return Uri.parse('/api/chat');
+    }
+    final String normalized = trimmed.endsWith('/')
+        ? trimmed.substring(0, trimmed.length - 1)
+        : trimmed;
+    return Uri.parse('$normalized/api/chat');
+  }
 
   Future<ChatResponse> sendMessage({
     required String characterId,
@@ -24,7 +35,7 @@ class ParavioApi {
     required String message,
     String? conversationId,
   }) async {
-    final Uri uri = Uri.parse('$baseUrl/api/chat');
+    final Uri uri = _chatEndpoint();
     final Map<String, dynamic> body = <String, dynamic>{
       'character_id': characterId,
       'user_id': userId,
