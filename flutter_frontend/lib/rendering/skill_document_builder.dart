@@ -60,6 +60,112 @@ class SkillDocumentBuilder {
       })();
     </script>
     <script>
+      (function () {
+        if (typeof window.Chart !== "undefined") return;
+
+        function BasicChart(ctx, config) {
+          this.ctx = ctx;
+          this.config = config || {};
+          this.data = this.config.data || { labels: [], datasets: [] };
+          this.options = this.config.options || {};
+          this.canvas = ctx && ctx.canvas ? ctx.canvas : null;
+          this._bars = [];
+          this._initCanvasSize();
+          this._draw();
+          this._bindClick();
+        }
+
+        BasicChart.prototype._initCanvasSize = function () {
+          if (!this.canvas) return;
+          if (!this.canvas.width || this.canvas.width < 10) {
+            this.canvas.width = this.canvas.clientWidth > 0 ? this.canvas.clientWidth : 640;
+          }
+          if (!this.canvas.height || this.canvas.height < 10) {
+            this.canvas.height = this.canvas.clientHeight > 0 ? this.canvas.clientHeight : 320;
+          }
+        };
+
+        BasicChart.prototype._draw = function () {
+          if (!this.ctx || !this.canvas) return;
+
+          const labels = Array.isArray(this.data.labels) ? this.data.labels : [];
+          const dataset = Array.isArray(this.data.datasets) && this.data.datasets.length > 0
+            ? this.data.datasets[0]
+            : { data: [] };
+          const values = Array.isArray(dataset.data) ? dataset.data : [];
+
+          const w = this.canvas.width;
+          const h = this.canvas.height;
+          const pad = 28;
+          const topPad = 20;
+          const bottomPad = 36;
+          const innerW = Math.max(1, w - pad * 2);
+          const innerH = Math.max(1, h - topPad - bottomPad);
+          const max = Math.max(1, ...values.map((v) => Number(v) || 0));
+          const count = Math.max(1, values.length);
+          const slot = innerW / count;
+          const barW = Math.max(10, slot * 0.66);
+
+          this.ctx.clearRect(0, 0, w, h);
+          this.ctx.fillStyle = "#101a2d";
+          this.ctx.fillRect(0, 0, w, h);
+
+          this.ctx.strokeStyle = "#304463";
+          this.ctx.beginPath();
+          this.ctx.moveTo(pad, h - bottomPad);
+          this.ctx.lineTo(w - pad, h - bottomPad);
+          this.ctx.stroke();
+
+          this.ctx.font = "12px sans-serif";
+          this.ctx.textAlign = "center";
+          this._bars = [];
+
+          for (let i = 0; i < count; i++) {
+            const value = Number(values[i]) || 0;
+            const xCenter = pad + slot * i + slot / 2;
+            const height = (value / max) * innerH;
+            const x = xCenter - barW / 2;
+            const y = h - bottomPad - height;
+
+            this.ctx.fillStyle = "#4e71ff";
+            this.ctx.fillRect(x, y, barW, height);
+
+            this.ctx.fillStyle = "#9eb1da";
+            this.ctx.fillText(String(labels[i] ?? ""), xCenter, h - 14);
+            this.ctx.fillStyle = "#e9eefb";
+            this.ctx.fillText(String(value), xCenter, Math.max(12, y - 6));
+
+            this._bars.push({ index: i, x: x, y: y, width: barW, height: height });
+          }
+        };
+
+        BasicChart.prototype._bindClick = function () {
+          if (!this.canvas) return;
+          this.canvas.addEventListener("click", (evt) => {
+            const rect = this.canvas.getBoundingClientRect();
+            const x = evt.clientX - rect.left;
+            const y = evt.clientY - rect.top;
+            let hitIndex = -1;
+            for (const bar of this._bars) {
+              const withinX = x >= bar.x && x <= bar.x + bar.width;
+              const withinY = y >= bar.y && y <= bar.y + bar.height;
+              if (withinX && withinY) {
+                hitIndex = bar.index;
+                break;
+              }
+            }
+            if (hitIndex >= 0 && this.options && typeof this.options.onClick === "function") {
+              this.options.onClick(evt, [{ index: hitIndex }]);
+            }
+          });
+        };
+
+        window.Chart = function (ctx, config) {
+          return new BasicChart(ctx, config);
+        };
+      })();
+    </script>
+    <script>
       $js
     </script>
   </body>

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_frontend/models/skill_payload.dart';
 import 'package:flutter_frontend/rendering/skill_document_builder.dart';
@@ -39,13 +40,22 @@ class _SkillRendererState extends State<SkillRenderer> {
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0x00000000))
-      ..addJavaScriptChannel(
+    final WebViewController controller = WebViewController();
+
+    // webview_flutter_web currently does not implement all controller APIs
+    // (such as setBackgroundColor / setJavaScriptMode / JavaScript channels),
+    // so gate mobile-only
+    // configuration to avoid runtime UnimplementedError on Flutter Web.
+    if (!kIsWeb) {
+      controller.setBackgroundColor(const Color(0x00000000));
+      controller.setJavaScriptMode(JavaScriptMode.unrestricted);
+      controller.addJavaScriptChannel(
         widget.bridgeChannel,
         onMessageReceived: _handleBridgeMessage,
       );
+    }
+
+    _controller = controller;
     _loadPayload();
   }
 
