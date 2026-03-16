@@ -3,9 +3,49 @@ import type { ChatCompletionMessageParam } from "openai/resources/chat/completio
 import { getCharacter, getDb, getMessages, getOrCreateConversation, getSkillsForCharacter, saveMessage } from "./db";
 import { buildSystemPrompt, buildToolDefinitions } from "./skills";
 import { executeTool } from "./tool-executor";
-import type { ChatRequest, ChatResponse, Env } from "./types";
+import type { ChatRequest, ChatResponse, Env, SkillPayload } from "./types";
 
 const MAX_TOOL_ITERATIONS = 10;
+const FORBIDDEN_WRAPPER_TAGS = /<\s*\/?\s*(html|head|body)\b/i;
+
+function toSkillPayload(rawContent: string): SkillPayload | null {
+  try {
+    const parsed = JSON.parse(rawContent) as Record<string, unknown>;
+    const { type, html, css, js, assets, actions } = parsed;
+
+    if (
+      type !== "html_app" ||
+      typeof html !== "string" ||
+      typeof css !== "string" ||
+      typeof js !== "string" ||
+      !assets ||
+      typeof assets !== "object" ||
+      Array.isArray(assets) ||
+      !Array.isArray(actions)
+    ) {
+      return null;
+    }
+
+    if (FORBIDDEN_WRAPPER_TAGS.test(html)) {
+      return null;
+    }
+
+    if (!actions.every((action) => action && typeof action === "object" && !Array.isArray(action))) {
+      return null;
+    }
+
+    return {
+      type: "html_app",
+      html,
+      css,
+      js,
+      assets: assets as Record<string, unknown>,
+      actions: actions as Array<Record<string, unknown>>,
+    };
+  } catch {
+    return null;
+  }
+}
 
 export async function handleChat(
   env: Env,
@@ -104,6 +144,7 @@ export async function handleChat(
       // If no tool calls, we're done
       if (!assistantMessage.tool_calls || assistantMessage.tool_calls.length === 0) {
         const responseText = assistantMessage.content ?? "";
+        const visualPayload = toSkillPayload(responseText);
 
         // Save final assistant message
         await saveMessage(sql, conversation.id, {
@@ -115,6 +156,7 @@ export async function handleChat(
           conversation_id: conversation.id,
           response: responseText,
           tool_calls_made: toolCallsMade,
+          visual_payload: visualPayload ?? undefined,
         };
       }
 
@@ -181,6 +223,7 @@ export async function handleChat(
       conversation_id: conversation.id,
       response: fallbackResponse,
       tool_calls_made: toolCallsMade,
+      visual_payload: undefined,
     };
   } finally {
     await sql.end();

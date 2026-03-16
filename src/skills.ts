@@ -1,6 +1,22 @@
 import type { ChatCompletionTool } from "openai/resources/chat/completions";
 import type { SkillWithTools } from "./types";
 
+const VISUAL_OUTPUT_RULES = `Visual Output Contract:
+When a skill needs to produce a UI, return ONLY a single JSON object with this exact shape:
+{
+  "type": "html_app",
+  "html": "<body content only, no html/head/body tags>",
+  "css": "plain CSS string",
+  "js": "plain JavaScript string",
+  "assets": {},
+  "actions": []
+}
+
+Rules:
+- Do not include any prose before or after the JSON object.
+- Do not include <html>, <head>, or <body> wrapper tags in "html".
+- Do not reference external CDN URLs unless they are declared in "assets".`;
+
 export function buildSystemPrompt(
   characterPrompt: string,
   skills: SkillWithTools[]
@@ -21,7 +37,9 @@ Available Skills:
 ${skillDescriptions}
 
 Skill Instructions:
-${skillInstructions}`;
+${skillInstructions}
+
+${VISUAL_OUTPUT_RULES}`;
 }
 
 export function buildToolDefinitions(

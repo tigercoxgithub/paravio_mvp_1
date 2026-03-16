@@ -63,10 +63,20 @@ export interface ChatRequest {
   conversation_id?: string;
 }
 
+export interface SkillPayload {
+  type: "html_app";
+  html: string;
+  css: string;
+  js: string;
+  assets: Record<string, unknown>;
+  actions: Array<Record<string, unknown>>;
+}
+
 export interface ChatResponse {
   conversation_id: string;
   response: string;
   tool_calls_made: string[];
+  visual_payload?: SkillPayload;
 }
 
 export interface Env {
